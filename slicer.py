@@ -1,8 +1,77 @@
-import bpy, bmesh
+bl_info = {
+	"name": "Object Slicer Addon",
+	"author": "6d7367",
+	"location": "View3D > Tools > Slicer Addon",
+	"version": (0, 1, 0),
+	"blender": (2, 7, 6),
+	"description": "Slices active object for number of pieces",
+	"wiki": "",
+	"category": "Object"
+}
 
-import time
+
+def register():
+	bpy.utils.register_class(SlicerOperator)
+	bpy.utils.register_class(SlicerPanel)
+	
+
+
+def unregister():
+	bpy.utils.unregister_class(SlicerPanel)
+	bpy.utils.unregister_class(SlicerOperator)
+	pass
+
+
 import random
 from mathutils import Vector
+import bpy
+import bmesh
+
+
+class SlicerPanel(bpy.types.Panel):
+	bl_space_type = "VIEW_3D"
+	bl_region_type = "TOOLS"
+	bl_category = "Slicer Addon"
+	bl_label = "Slicer Addon"
+	bl_context = "objectmode"
+
+	def draw(self, context):
+		self.layout.prop(context.scene, "slicer_step")
+		self.layout.operator("object.slicer_operator")
+
+	@classmethod
+	def register(cls):
+		pass
+
+	@classmethod
+	def unregister(cls):
+		pass
+
+class SlicerOperator(bpy.types.Operator):
+	bl_idname = "object.slicer_operator"
+	bl_label = "Slice object"
+
+	def execute(self, context):
+		step = round(context.scene.slicer_step, 2)
+		slcr = Slicer(step)
+		slcr.slice()
+
+		del slcr
+		
+		return {'FINISHED'}
+
+	@classmethod
+	def register(cls):
+		bpy.types.Scene.slicer_step = bpy.props.FloatProperty(
+			name = "step",
+			description = "object slicer step",
+			default = 0.25
+		)
+
+	@classmethod
+	def unregister(cls):
+		pass
+
 
 class Slicer():
     @staticmethod    
@@ -94,7 +163,6 @@ class Slicer():
         self.main_object.select = True
         
         count = 0
-        #step_count = 1
         while count <= step_count:
             self.objects.append(
                 self._make_object(count+1)
@@ -184,9 +252,3 @@ class Slicer():
             
             sl.select = False
         pass
-
-    def __repr__(self):
-        return "%s(x= %s, y= %s, z= %s)" % (self.__class__.__name__, self.x, self.y, self.z)
-
-slcr = Slicer()
-slcr.slice()
