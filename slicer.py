@@ -81,6 +81,16 @@ class Slicer():
     @staticmethod
     def to_edit():
         bpy.ops.object.mode_set(mode='EDIT')
+
+    @staticmethod
+    def activate_object(obj, deselect_all = True):
+        if (deselect_all):
+            bpy.ops.object.select_all(action="DESELECT")
+
+        obj.select = True
+        bpy.context.scene.objects.active = obj
+
+
     
     def __init__(self, step = 0.5):
         self.x, self.y, self.z = None, None, None
@@ -92,9 +102,27 @@ class Slicer():
         self.prev_name = self.main_object.name
         new_name = 'object_{}_slice'.format(random.randint(1000, 50000))
         self.main_object.name = new_name
+
+    def slice(self):
+        self._compute_min_max()
+        self._generate_slicers()
+        self._generate_objects_to_slice()
+        
+        self.main_object.hide = True
+        
+        Slicer.to_object();
+        for obj in self.objects:
+            Slicer.activate_object(obj)
+            
+            self._apply_mod1(obj)
+            self._apply_mod2(obj)
+            
+            self._raise_slicers()
+
+        self._clean()
      
     
-    def compute_min_max(self):
+    def _compute_min_max(self):
         Slicer.to_edit()
         
         bm = bmesh.from_edit_mesh(bpy.context.object.data)
@@ -119,7 +147,7 @@ class Slicer():
         
         Slicer.to_object()
     
-    def generate_slicers(self):
+    def _generate_slicers(self):
         width_x = (self.x["max"] - self.x["min"])
         width_y = (self.y["max"] - self.y["min"])
         
@@ -146,77 +174,27 @@ class Slicer():
         
         return bpy.context.active_object
     
+    
+    def _generate_objects_to_slice(self):
+        total_height = (self.z["max"] - self.z["min"]) + 0.0
+        step_count = total_height / self.step
+        
+        Slicer.activate_object(self.main_object)
+        
+        count = 0
+        while count <= step_count:
+            new_obj = self._make_object(count+1)
+            self.objects.append(new_obj)
+            count += 1
+
     def _make_object(self, new_object_number):
-        bpy.ops.object.select_all(action="DESELECT")    
-        self.main_object.select = True
+        Slicer.activate_object(self.main_object)
         bpy.ops.object.duplicate()
         
         object_name = '{}.{:03d}'.format(self.main_object.name, new_object_number)
         return bpy.data.objects[object_name]
     
-    def generate_objects_to_slice(self):
-        total_height = (self.z["max"] - self.z["min"]) + 0.0
-        step_count = total_height / self.step
-        
-    
-        bpy.ops.object.select_all(action="DESELECT")    
-        self.main_object.select = True
-        
-        count = 0
-        while count <= step_count:
-            self.objects.append(
-                self._make_object(count+1)
-            )
-            count += 1
-        pass
-    
-    def _remove_slicers(self):
-        bpy.ops.object.select_all(action="DESELECT")
-        for slicer in self.slicers:
-            slicer.select = True
-            bpy.ops.object.delete()
-    
-    def _remove_objects(self):
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in self.objects:
-            obj.select = True
-            bpy.ops.object.delete()
-    
-    def clean(self):
-        self._remove_slicers()
-        #self._remove_objects()
-                
-        self.main_object.select = True
-        self.main_object.name = self.prev_name
-        
-        key = 1
-        for slice in self.objects:
-            slice.name = '{}.slice_{}'.format(self.main_object.name, key)
-            key += 1
-    
-    def slice(self):
-        self.compute_min_max()
-        self.generate_slicers()
-        self.generate_objects_to_slice()
-        
-        self.main_object.hide = True
-        
-        bpy.ops.object.select_all(action="DESELECT")
-        
-        
-        Slicer.to_object();
-        for obj in self.objects:
-            obj.select = True
-            bpy.context.scene.objects.active = obj
-            
-            self._apply_mod1(obj)
-            self._apply_mod2(obj)
-            
-            self._raise_slicers()    
-            obj.select = False
-            
-        
-        self.clean()
+
     def _apply_mod1(self, obj):
         bpy.ops.object.modifier_add(type='BOOLEAN')
         curr_obj_name = obj.name
@@ -240,15 +218,24 @@ class Slicer():
             mod.operation = 'INTERSECT'
             mod.object = self.slicers[1]
             bpy.ops.object.modifier_apply(modifier=modK)
-        pass
     
     def _raise_slicers(self):
-        bpy.ops.object.select_all(action="DESELECT")
         for sl in self.slicers:
-            sl.select = True
-            bpy.context.scene.objects.active = sl
-            
+            Slicer.activate_object(sl)
             sl.location += Vector((0.0, 0.0, self.step))
-            
-            sl.select = False
-        pass
+
+    def _clean(self):
+        self._remove_slicers()
+                
+        self.main_object.name = self.prev_name
+        Slicer.activate_object(self.main_object)
+        
+        key = 1
+        for slc in self.objects:
+            slc.name = '{}.slice_{}'.format(self.main_object.name, key)
+            key += 1
+
+    def _remove_slicers(self):
+        for slicer in self.slicers:
+            Slicer.activate_object(slicer)
+            bpy.ops.object.delete()
