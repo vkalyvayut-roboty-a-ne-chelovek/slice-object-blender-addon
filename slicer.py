@@ -53,7 +53,8 @@ class SlicerOperator(bpy.types.Operator):
 
 	def execute(self, context):
 		step = round(context.scene.slicer_step, 2)
-		slcr = Slicer(step)
+        only_contours = context.scene.slicer_only_contour
+		slcr = Slicer(step, only_contours)
 		slcr.slice()
 
 		del slcr
@@ -67,6 +68,12 @@ class SlicerOperator(bpy.types.Operator):
 			description = "object slicer step",
 			default = 0.25
 		)
+
+        bpy.types.Scene.slicer_only_contour = bpy.props.BoolProperty(
+            name = "only_contours",
+            description = "only horizontal contours",
+            default = False
+        )
 
 	@classmethod
 	def unregister(cls):
@@ -92,9 +99,10 @@ class Slicer():
 
 
     
-    def __init__(self, step = 0.5):
+    def __init__(self, step = 0.5, only_contours = False):
         self.x, self.y, self.z = None, None, None
         self.step = step
+        self.only_contours = only_contours
         self.slicers = []
         self.objects = []
         
@@ -116,6 +124,10 @@ class Slicer():
             
             self._apply_mod1(obj)
             self._apply_mod2(obj)
+
+            if only_contours:
+                self.create_contours(obj)
+
             
             self._raise_slicers()
 
@@ -239,3 +251,7 @@ class Slicer():
         for slicer in self.slicers:
             Slicer.activate_object(slicer)
             bpy.ops.object.delete()
+
+    # issue 1
+    def create_contours(self, obj):
+        pass
