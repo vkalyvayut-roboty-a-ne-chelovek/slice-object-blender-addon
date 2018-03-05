@@ -127,15 +127,13 @@ class Slicer():
 			
 			self._apply_mod1(obj)
 			self._apply_mod2(obj)
-
-			if self.only_contours:
-				self.create_contours(obj)
-				return
-
 			
 			self._raise_slicers()
 
-		# self._clean()
+		if self.only_contours:
+			self.create_contours()
+
+		self._clean()
 	 
 	
 	def _compute_min_max(self):
@@ -257,9 +255,42 @@ class Slicer():
 			bpy.ops.object.delete()
 
 	# issue 1
-	def create_contours(self, obj):
-		print(obj)
-		GLOBAL_EDIT_OBJECT = obj
+	def create_contours(self):
+		Slicer.to_object()
+		for obj in self.objects:
+			Slicer.activate_object(obj)
+			Slicer.to_edit()
+
+			edges = []
+
+			bm = bmesh.from_edit_mesh(obj.data)
+			for e in bm.edges:
+				line = []
+				for v in e.verts:
+					line.append(v.co)
+				edges.append(line)
+			#
+			min_z = min(edges[0][0].z, edges[0][1].z)
+
+			for e in edges:
+				min_z = min(min_z, e[0].z, e[1].z)
+
+			contour_lines = []
+
+			for e in edges:
+				add_to_contour = True
+
+				if (e[0].z > min_z) or (e[1].z > min_z):
+					add_to_contour = False
+
+				if add_to_contour:
+					contour_lines.append(e)
+
+			print("--- contours")
+			print(contour_lines)
+			print(len(contour_lines))
+
+			Slicer.to_object()
 		pass
 
 if __name__ == "__main__":
