@@ -254,66 +254,27 @@ class Slicer():
 			Slicer.activate_object(slicer)
 			bpy.ops.object.delete()
 
-	# issue 1
 	def create_contours(self):
 		Slicer.to_object()
-		obj_count = 0;
-		new_contours = []
+		obj_count = 0
 		for obj in self.objects:
 			Slicer.activate_object(obj)
 			Slicer.to_edit()
 
-			edges = []
-
-			bm = bmesh.from_edit_mesh(obj.data)
-			for e in bm.edges:
-				line = []
-				for v in e.verts:
-					line.append(v.co)
-				edges.append(line)
-			#
-			min_z = min(edges[0][0].z, edges[0][1].z)
-
-			for e in edges:
-				min_z = min(min_z, e[0].z, e[1].z)
-
-			contour_lines = []
-
-			for e in edges:
-				add_to_contour = True
-
-				if (e[0].z > min_z) or (e[1].z > min_z):
-					add_to_contour = False
-
-				if add_to_contour:
-					contour_lines.append(e)
-
-			points_data = []
-			edges_data = []
-
 			bm = bmesh.from_edit_mesh(obj.data)
 
-			matrix_to_global = bpy.context.active_object.matrix_world
+			matrix_to_global = obj.matrix_world
+			points = [v.co * matrix_to_global for v in obj.data.vertices]
+			lines = []
 
-			# contour_lines = []
-			# for v in bm.verts:
-			# 	curr_co = matrix_to_global * v.co
-			# 	contour = []
-			# 	if curr_co.z <= min_z:
-			# 		contour.append(curr_co)
+			# line = []
+			# for i in range(int(len(points) / 2)):
+			# 	line = [i, i+1]
+			# 	lines.append(line)
 
-			# 	contour_lines.append(contour)
+			# line = [int(len(points) / 2), 0]
+			# lines.append(line)
 
-
-			for contour in contour_lines:
-				for point in contour:
-					points_data.append(point)
-
-				edges_data.append([len(points_data) -2, len(points_data) -1])
-
-
-
-			# https://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
 			meshName = 'mesh' + str(obj_count)
 			obName = 'ob' + str(obj_count)
 			me = bpy.data.meshes.new(meshName)
@@ -321,26 +282,103 @@ class Slicer():
 			scn = bpy.context.scene
 			scn.objects.link(ob)
 
-			me.from_pydata(points_data, edges_data, [])
+			me.from_pydata(points, lines, [])
 			me.update()
 
-			new_contours.append(ob)
-
-
-			# print("--- contours")
-			# print(contour_lines)
-			# print(edges_data)
-			# print(len(contour_lines))
-			# print(points_data)
-			print("\n" * 5)
-
-			obj_count += 1
+			print("\n" * 2)
+			print(points)
+			print(lines)
 
 			Slicer.to_object()
 			bpy.ops.object.delete()
+			obj_count += 1
+
+	# issue 1
+	# def create_contours(self):
+	# 	Slicer.to_object()
+	# 	obj_count = 0;
+	# 	new_contours = []
+	# 	for obj in self.objects:
+	# 		Slicer.activate_object(obj)
+	# 		Slicer.to_edit()
+
+	# 		edges = []
+
+	# 		bm = bmesh.from_edit_mesh(obj.data)
+	# 		matrix_to_global = obj.matrix_world
+	# 		for e in bm.edges:
+	# 			line = []
+	# 			for v in e.verts:
+	# 				line.append(v.co)
+	# 			edges.append(line)
+	# 		#
+
+
+
+	# 		edges[0][0] = edges[0][0] * matrix_to_global
+	# 		edges[0][1] = edges[0][1] * matrix_to_global
+	# 		min_z = min(edges[0][0].z, edges[0][1].z)
+
+	# 		for e in edges:
+	# 			e[0] = e[0] * matrix_to_global
+	# 			e[1] = e[1] * matrix_to_global
+	# 			min_z = min(min_z, e[0].z, e[1].z)
+
+	# 		contour_lines = []
+
+	# 		for e in edges:
+	# 			add_to_contour = True
+
+	# 			if (e[0].z > min_z) or (e[1].z > min_z):
+	# 				add_to_contour = False
+
+	# 			if add_to_contour:
+	# 				contour_lines.append(e)
+
+	# 		points_data = []
+	# 		edges_data = []
+
+	# 		for contour in contour_lines:
+	# 			for point in contour:
+	# 				points_data.append(point)
+	# 				# points_data.append(true_coord)
+	# 				# print('coords', true_coord, point)
+
+	# 			if points_data:
+	# 				edges_data.append([len(points_data) -2, len(points_data) -1])
+
+
+	# 		points_data = [v.co for v in obj.data.vertices]
+	# 		edges_data = []
+
+
+	# 		# print([v.co for v in obj.data.vertices])
+
+
+
+	# 		# https://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
+	# 		meshName = 'mesh' + str(obj_count)
+	# 		obName = 'ob' + str(obj_count)
+	# 		me = bpy.data.meshes.new(meshName)
+	# 		ob = bpy.data.objects.new(obName, me)
+	# 		scn = bpy.context.scene
+	# 		scn.objects.link(ob)
+
+	# 		me.from_pydata(points_data, edges_data, [])
+	# 		me.update()
+	# 		print('new contour')
+
+	# 		new_contours.append(ob)
+
+	# 		print("\n" * 5)
+
+	# 		obj_count += 1
+
+	# 		Slicer.to_object()
+	# 		bpy.ops.object.delete()
 		
-		for c in new_contours:
-			self.objects.append(c)
+	# 	for c in new_contours:
+	# 		self.objects.append(c)
 
 if __name__ == "__main__":
 	register()
