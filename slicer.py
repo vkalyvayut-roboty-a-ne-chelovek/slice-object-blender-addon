@@ -258,6 +258,7 @@ class Slicer():
 	def create_contours(self):
 		Slicer.to_object()
 		obj_count = 0;
+		new_contours = []
 		for obj in self.objects:
 			Slicer.activate_object(obj)
 			Slicer.to_edit()
@@ -289,11 +290,26 @@ class Slicer():
 
 			points_data = []
 			edges_data = []
-			for contour in contour_lines:
-				points_data.append(contour[0])
-				points_data.append(contour[1])
-				edges_data.append([ len(points_data) -2, len(points_data) -1 ])
 
+			bm = bmesh.from_edit_mesh(obj.data)
+
+			matrix_to_global = bpy.context.active_object.matrix_world
+
+			# contour_lines = []
+			# for v in bm.verts:
+			# 	curr_co = matrix_to_global * v.co
+			# 	contour = []
+			# 	if curr_co.z <= min_z:
+			# 		contour.append(curr_co)
+
+			# 	contour_lines.append(contour)
+
+
+			for contour in contour_lines:
+				for point in contour:
+					points_data.append(point)
+
+				edges_data.append([len(points_data) -2, len(points_data) -1])
 
 
 
@@ -308,17 +324,23 @@ class Slicer():
 			me.from_pydata(points_data, edges_data, [])
 			me.update()
 
+			new_contours.append(ob)
 
-			print("--- contours")
-			print(contour_lines)
-			print(len(contour_lines))
-			print(points_data)
+
+			# print("--- contours")
+			# print(contour_lines)
+			# print(edges_data)
+			# print(len(contour_lines))
+			# print(points_data)
 			print("\n" * 5)
 
 			obj_count += 1
 
 			Slicer.to_object()
-		pass
+			bpy.ops.object.delete()
+		
+		for c in new_contours:
+			self.objects.append(c)
 
 if __name__ == "__main__":
 	register()
