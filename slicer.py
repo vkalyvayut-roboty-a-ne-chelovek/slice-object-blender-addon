@@ -257,6 +257,7 @@ class Slicer():
 	# issue 1
 	def create_contours(self):
 		Slicer.to_object()
+		obj_count = 0;
 		for obj in self.objects:
 			Slicer.activate_object(obj)
 			Slicer.to_edit()
@@ -286,9 +287,31 @@ class Slicer():
 				if add_to_contour:
 					contour_lines.append(e)
 
+			points_data = [];
+			for contour in contour_lines:
+				points_data.append(contour[0])
+				points_data.append(contour[1])
+
+			meshName = 'mesh' + str(obj_count)
+			obName = 'ob' + str(obj_count)
+			me = bpy.data.meshes.new(meshName)
+			ob = bpy.data.objects.new(obName, me)
+			scn = bpy.context.scene
+			scn.objects.link(ob)
+			# scn.objects.active = ob
+			# ob.select = True
+
+			me.from_pydata(points_data, [], [])
+			me.update()
+
+
 			print("--- contours")
 			print(contour_lines)
 			print(len(contour_lines))
+			print(points_data)
+			print("\n" * 5)
+
+			obj_count += 1
 
 			Slicer.to_object()
 		pass
