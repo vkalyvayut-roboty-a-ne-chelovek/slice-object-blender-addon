@@ -287,21 +287,25 @@ class Slicer():
 				if add_to_contour:
 					contour_lines.append(e)
 
-			points_data = [];
+			points_data = []
+			edges_data = []
 			for contour in contour_lines:
 				points_data.append(contour[0])
 				points_data.append(contour[1])
+				edges_data.append([ len(points_data) -2, len(points_data) -1 ])
 
+
+
+
+			# https://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Three_ways_to_create_objects
 			meshName = 'mesh' + str(obj_count)
 			obName = 'ob' + str(obj_count)
 			me = bpy.data.meshes.new(meshName)
 			ob = bpy.data.objects.new(obName, me)
 			scn = bpy.context.scene
 			scn.objects.link(ob)
-			# scn.objects.active = ob
-			# ob.select = True
 
-			me.from_pydata(points_data, [], [])
+			me.from_pydata(points_data, edges_data, [])
 			me.update()
 
 
